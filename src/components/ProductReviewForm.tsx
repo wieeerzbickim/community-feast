@@ -45,28 +45,12 @@ const ProductReviewForm: React.FC<ProductReviewFormProps> = ({ productId, produc
     setSubmitting(true);
 
     try {
-      // First create a dummy order for the review (required by schema)
-      const { data: orderData, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          consumer_id: user.id,
-          producer_id: producerId,
-          total_amount: 0,
-          status: 'completed',
-          delivery_method: 'pickup'
-        })
-        .select()
-        .single();
-
-      if (orderError) throw orderError;
-
       const { error } = await supabase
         .from('reviews')
         .insert({
           product_id: productId,
           consumer_id: user.id,
           producer_id: producerId,
-          order_id: orderData.id,
           rating,
           comment: comment.trim() || null,
         });
