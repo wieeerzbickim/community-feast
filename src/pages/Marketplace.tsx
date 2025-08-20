@@ -18,6 +18,9 @@ interface Product {
   is_available: boolean;
   featured: boolean;
   tags: string[];
+  image_url: string | null;
+  made_to_order: boolean;
+  execution_time_hours: number | null;
   producer_profiles: {
     business_name: string;
   };
@@ -152,9 +155,17 @@ const Marketplace = () => {
                       {t('producer.featured')}
                     </Badge>
                   )}
-                  <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                    <Package className="h-16 w-16" />
-                  </div>
+                  {product.image_url ? (
+                    <img 
+                      src={product.image_url} 
+                      alt={product.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                      <Package className="h-16 w-16" />
+                    </div>
+                  )}
                 </div>
                 
                 <CardHeader className="pb-2">
@@ -184,7 +195,11 @@ const Marketplace = () => {
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    {product.stock_quantity > 0 ? (
+                    {product.made_to_order ? (
+                      <span className="text-sm text-muted-foreground">
+                        Na zamówienie ({product.execution_time_hours}h)
+                      </span>
+                    ) : product.stock_quantity > 0 ? (
                       <span className="text-sm text-muted-foreground">
                         {product.stock_quantity} {t('producer.inStock')}
                       </span>
@@ -200,7 +215,7 @@ const Marketplace = () => {
                       </Button>
                       <Button 
                         size="sm" 
-                        disabled={product.stock_quantity === 0}
+                        disabled={!product.made_to_order && product.stock_quantity === 0}
                       >
                         <ShoppingCart className="h-4 w-4 mr-2" />
                         {t('marketplace.addToCart')}

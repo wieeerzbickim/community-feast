@@ -299,10 +299,13 @@ export type Database = {
           category_id: string | null
           created_at: string | null
           description: string | null
+          execution_time_hours: number | null
           featured: boolean | null
           id: string
+          image_url: string | null
           ingredients: string | null
           is_available: boolean | null
+          made_to_order: boolean | null
           name: string
           price: number
           producer_id: string
@@ -318,10 +321,13 @@ export type Database = {
           category_id?: string | null
           created_at?: string | null
           description?: string | null
+          execution_time_hours?: number | null
           featured?: boolean | null
           id?: string
+          image_url?: string | null
           ingredients?: string | null
           is_available?: boolean | null
+          made_to_order?: boolean | null
           name: string
           price: number
           producer_id: string
@@ -337,10 +343,13 @@ export type Database = {
           category_id?: string | null
           created_at?: string | null
           description?: string | null
+          execution_time_hours?: number | null
           featured?: boolean | null
           id?: string
+          image_url?: string | null
           ingredients?: string | null
           is_available?: boolean | null
+          made_to_order?: boolean | null
           name?: string
           price?: number
           producer_id?: string
