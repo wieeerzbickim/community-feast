@@ -67,7 +67,6 @@ const AdminDashboard = () => {
         .select(`
           *,
           user_profiles(full_name),
-          producer_profiles(business_name),
           product_categories(name)
         `)
         .order('created_at', { ascending: false });
@@ -437,8 +436,7 @@ const AdminDashboard = () => {
                 <TableBody>
                   {products.slice(0, 10).map((product) => (
                     <TableRow key={product.id}>
-                      <TableCell>{product.name}</TableCell>
-                      <TableCell>{product.producer_profiles?.[0]?.business_name || product.user_profiles?.full_name}</TableCell>
+                      <TableCell>{product.user_profiles?.full_name}</TableCell>
                       <TableCell>{product.product_categories?.name || 'Uncategorized'}</TableCell>
                       <TableCell>${product.price}</TableCell>
                       <TableCell>{product.stock_quantity}</TableCell>

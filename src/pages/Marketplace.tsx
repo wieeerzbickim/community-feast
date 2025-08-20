@@ -26,9 +26,6 @@ interface Product {
   user_profiles: {
     full_name: string;
   } | null;
-  producer_profiles: {
-    business_name: string;
-  }[] | null;
   product_categories: {
     name: string;
   } | null;
@@ -61,7 +58,6 @@ const Marketplace = () => {
         .select(`
           *,
           user_profiles(full_name),
-          producer_profiles(business_name),
           product_categories(name)
         `)
         .eq('is_available', true)
@@ -88,7 +84,7 @@ const Marketplace = () => {
   };
 
   const filteredProducts = products.filter(product => {
-    const producerName = product.producer_profiles?.[0]?.business_name || product.user_profiles?.full_name || '';
+    const producerName = product.user_profiles?.full_name || '';
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          producerName.toLowerCase().includes(searchTerm.toLowerCase());
@@ -217,7 +213,7 @@ const Marketplace = () => {
                     {product.name}
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    {t('marketplace.by')} {product.producer_profiles?.[0]?.business_name || product.user_profiles?.full_name}
+                    {t('marketplace.by')} {product.user_profiles?.full_name}
                   </p>
                 </CardHeader>
                 

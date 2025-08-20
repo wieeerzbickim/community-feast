@@ -57,8 +57,7 @@ const Cart = () => {
             .from('products')
             .select(`
               *,
-              user_profiles(full_name),
-              producer_profiles(business_name)
+              user_profiles(full_name)
             `)
             .in('id', productIds);
 
@@ -198,7 +197,7 @@ const Cart = () => {
                       <div className="flex-1">
                         <h3 className="font-semibold text-lg">{item.product.name}</h3>
                         <p className="text-sm text-muted-foreground">
-                          by {item.product.producer_profiles?.business_name || item.product.user_profiles?.full_name}
+                          by {item.product.user_profiles?.full_name}
                         </p>
                         <div className="flex items-center gap-2 mt-2">
                           <span className="font-bold text-primary">
