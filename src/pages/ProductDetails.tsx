@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
+import ProductReviewForm from '@/components/ProductReviewForm';
 import { 
   ArrowLeft, 
   ShoppingCart, 
@@ -16,7 +17,9 @@ import {
   Clock, 
   Package,
   User,
-  Store
+  Store,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 
 interface Product {
@@ -33,6 +36,7 @@ interface Product {
   execution_time_hours: number;
   made_to_order: boolean;
   unit: string;
+  producer_id: string;
   user_profiles: {
     id: string;
     full_name: string;
@@ -65,6 +69,8 @@ const ProductDetails = () => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
+  const [showAllReviews, setShowAllReviews] = useState(false);
+  const [averageRating, setAverageRating] = useState(0);
 
   useEffect(() => {
     if (id) {
@@ -105,18 +111,31 @@ const ProductDetails = () => {
         .from('reviews')
         .select(`
           *,
-          user_profiles(full_name, avatar_url)
+          user_profiles!reviews_consumer_id_fkey(full_name, avatar_url)
         `)
         .eq('product_id', id)
-        .order('created_at', { ascending: false })
-        .limit(10);
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setReviews(data || []);
+      
+      const reviewsData = data || [];
+      setReviews(reviewsData);
+      
+      // Calculate average rating
+      if (reviewsData.length > 0) {
+        const avg = reviewsData.reduce((sum, review) => sum + review.rating, 0) / reviewsData.length;
+        setAverageRating(avg);
+      }
     } catch (error) {
       console.error('Error fetching reviews:', error);
     }
   };
+
+  const onReviewSubmitted = () => {
+    fetchReviews();
+  };
+
+  const displayedReviews = showAllReviews ? reviews : reviews.slice(0, 3);
 
   const addToCart = async () => {
     if (!user) {
@@ -201,12 +220,22 @@ const ProductDetails = () => {
           {/* Product Info */}
           <div className="space-y-6">
             <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Badge variant="secondary">
-                  {product.product_categories?.name || 'Uncategorized'}
-                </Badge>
-                {product.made_to_order && (
-                  <Badge variant="outline">Made to Order</Badge>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary">
+                    {product.product_categories?.name || 'Uncategorized'}
+                  </Badge>
+                  {product.made_to_order && (
+                    <Badge variant="outline">Made to Order</Badge>
+                  )}
+                </div>
+                {averageRating > 0 && (
+                  <div className="flex items-center gap-1">
+                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                    <span className="text-sm font-medium">
+                      {averageRating.toFixed(1)} ({reviews.length} reviews)
+                    </span>
+                  </div>
                 )}
               </div>
               <h1 className="text-3xl font-bold mb-2">{product.name}</h1>
@@ -311,7 +340,7 @@ const ProductDetails = () => {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => navigate(`/producer/${product.user_profiles?.id}`)}
+                    onClick={() => navigate(`/producer/${product.producer_id}`)}
                   >
                     View Profile
                   </Button>
@@ -325,52 +354,97 @@ const ProductDetails = () => {
         </Card>
 
         {/* Reviews */}
-        {reviews.length > 0 && (
-          <Card className="mt-8">
-            <CardHeader>
-              <CardTitle>Customer Reviews</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {reviews.map((review) => (
-                  <div key={review.id} className="border-b pb-4 last:border-b-0">
-                    <div className="flex items-start gap-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={review.user_profiles?.avatar_url} />
-                        <AvatarFallback>
-                          <User className="h-5 w-5" />
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium">{review.user_profiles?.full_name}</span>
-                          <div className="flex items-center gap-1">
-                            {[...Array(5)].map((_, i) => (
-                              <Star
-                                key={i}
-                                className={`h-3 w-3 ${
-                                  i < review.rating
-                                    ? 'fill-yellow-400 text-yellow-400'
-                                    : 'text-gray-300'
-                                }`}
-                              />
-                            ))}
+        <div className="mt-8 space-y-6">
+          <ProductReviewForm productId={id!} onReviewSubmitted={onReviewSubmitted} />
+          
+          {reviews.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Customer Reviews ({reviews.length})</CardTitle>
+                {averageRating > 0 && (
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`h-4 w-4 ${
+                            i < Math.round(averageRating)
+                              ? 'fill-yellow-400 text-yellow-400'
+                              : 'text-gray-300'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      {averageRating.toFixed(1)} out of 5
+                    </span>
+                  </div>
+                )}
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {displayedReviews.map((review) => (
+                    <div key={review.id} className="border-b pb-4 last:border-b-0">
+                      <div className="flex items-start gap-3">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={review.user_profiles?.avatar_url} />
+                          <AvatarFallback>
+                            <User className="h-5 w-5" />
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-medium">{review.user_profiles?.full_name}</span>
+                            <div className="flex items-center gap-1">
+                              {[...Array(5)].map((_, i) => (
+                                <Star
+                                  key={i}
+                                  className={`h-3 w-3 ${
+                                    i < review.rating
+                                      ? 'fill-yellow-400 text-yellow-400'
+                                      : 'text-gray-300'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                            <span className="text-sm text-muted-foreground">
+                              {new Date(review.created_at).toLocaleDateString()}
+                            </span>
                           </div>
-                          <span className="text-sm text-muted-foreground">
-                            {new Date(review.created_at).toLocaleDateString()}
-                          </span>
+                          {review.comment && (
+                            <p className="text-sm text-muted-foreground">{review.comment}</p>
+                          )}
                         </div>
-                        {review.comment && (
-                          <p className="text-sm text-muted-foreground">{review.comment}</p>
-                        )}
                       </div>
                     </div>
+                  ))}
+                </div>
+                
+                {reviews.length > 3 && (
+                  <div className="mt-4 text-center">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowAllReviews(!showAllReviews)}
+                      className="flex items-center gap-2"
+                    >
+                      {showAllReviews ? (
+                        <>
+                          <ChevronUp className="h-4 w-4" />
+                          Show Less
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="h-4 w-4" />
+                          Show All Reviews ({reviews.length})
+                        </>
+                      )}
+                    </Button>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
     </div>
   );
