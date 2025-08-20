@@ -17,6 +17,7 @@ import ProductDetails from "./pages/ProductDetails";
 import EditProduct from "./pages/EditProduct";
 import NotFound from "./pages/NotFound";
 import OrderHistory from "./pages/OrderHistory";
+import ProducerProfile from "./pages/ProducerProfile";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,7 @@ const App = () => (
               <Route path="/cart" element={<Cart />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/product/:id" element={<ProductDetails />} />
+              <Route path="/producer/:id" element={<ProducerProfile />} />
               <Route path="/orders" element={<OrderHistory />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

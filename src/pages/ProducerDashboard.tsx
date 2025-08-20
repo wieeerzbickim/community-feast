@@ -16,8 +16,11 @@ import {
   Edit,
   Trash2,
   Eye,
-  TrendingUp
+  TrendingUp,
+  Star,
+  User
 } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useNavigate } from 'react-router-dom';
 
 interface Product {
@@ -49,6 +52,20 @@ interface Order {
   }[];
 }
 
+interface Review {
+  id: string;
+  rating: number;
+  comment: string;
+  created_at: string;
+  user_profiles: {
+    full_name: string;
+    avatar_url: string;
+  };
+  products: {
+    name: string;
+  };
+}
+
 const ProducerDashboard = () => {
   const { user, userProfile, isProducer } = useAuth();
   const { t } = useLanguage();
@@ -57,6 +74,7 @@ const ProducerDashboard = () => {
   
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [producerProfile, setProducerProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -113,6 +131,19 @@ const ProducerDashboard = () => {
         .order('created_at', { ascending: false });
       
       setOrders(ordersData || []);
+
+      // Fetch reviews
+      const { data: reviewsData } = await supabase
+        .from('reviews')
+        .select(`
+          *,
+          user_profiles(full_name, avatar_url),
+          products(name)
+        `)
+        .eq('producer_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      setReviews(reviewsData || []);
 
       // Calculate stats
       const totalProducts = productsData?.length || 0;
@@ -260,6 +291,7 @@ const ProducerDashboard = () => {
           <TabsList>
             <TabsTrigger value="products">Products</TabsTrigger>
             <TabsTrigger value="orders">Orders</TabsTrigger>
+            <TabsTrigger value="reviews">Reviews</TabsTrigger>
             <TabsTrigger value="profile">Profile Settings</TabsTrigger>
           </TabsList>
 
@@ -427,6 +459,70 @@ const ProducerDashboard = () => {
                       {producerProfile.delivery_available && (
                         <p><strong>Delivery Fee:</strong> ${producerProfile.delivery_fee}</p>
                       )}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="reviews">
+            <Card>
+              <CardHeader>
+                <CardTitle>Customer Reviews</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {reviews.map(review => (
+                    <div key={review.id} className="p-4 border rounded-lg">
+                      <div className="flex items-start gap-3">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={review.user_profiles?.avatar_url} />
+                          <AvatarFallback>
+                            <User className="h-5 w-5" />
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-3">
+                              <span className="font-medium">{review.user_profiles?.full_name}</span>
+                              <div className="flex items-center gap-1">
+                                {[...Array(5)].map((_, i) => (
+                                  <Star
+                                    key={i}
+                                    className={`h-3 w-3 ${
+                                      i < review.rating
+                                        ? 'fill-yellow-400 text-yellow-400'
+                                        : 'text-gray-300'
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                            <span className="text-sm text-muted-foreground">
+                              {new Date(review.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                          
+                          <p className="text-sm text-muted-foreground mb-2">
+                            Product: {review.products?.name}
+                          </p>
+                          
+                          {review.comment && (
+                            <p className="text-sm">{review.comment}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {reviews.length === 0 && (
+                    <div className="text-center py-8">
+                      <Star className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold mb-2">No reviews yet</h3>
+                      <p className="text-muted-foreground">
+                        Reviews will appear here when customers rate your products
+                      </p>
                     </div>
                   )}
                 </div>

@@ -304,10 +304,19 @@ const ProductDetails = () => {
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
-                <h3 className="text-xl font-semibold">
-                  {product.user_profiles?.full_name}
-                </h3>
-                <p className="text-muted-foreground mt-2">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-xl font-semibold">
+                    {product.user_profiles?.full_name}
+                  </h3>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => navigate(`/producer/${product.user_profiles?.id}`)}
+                  >
+                    View Profile
+                  </Button>
+                </div>
+                <p className="text-muted-foreground">
                   Local producer offering fresh, quality products
                 </p>
               </div>

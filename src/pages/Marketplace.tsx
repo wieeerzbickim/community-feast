@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Package } from 'lucide-react';
+import { Search, Package, Star } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -21,6 +21,8 @@ interface Product {
   image_url: string | null;
   made_to_order: boolean;
   execution_time_hours: number | null;
+  rating?: number;
+  review_count?: number;
   user_profiles: {
     full_name: string;
   } | null;
@@ -63,6 +65,26 @@ const Marketplace = () => {
 
       if (productsError) throw productsError;
 
+      // Calculate average rating for each product
+      const productsWithRating = await Promise.all(
+        (productsData || []).map(async (product) => {
+          const { data: reviews } = await supabase
+            .from('reviews')
+            .select('rating')
+            .eq('product_id', product.id);
+          
+          const avgRating = reviews && reviews.length > 0 
+            ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length 
+            : 0;
+          
+          return {
+            ...product,
+            rating: avgRating,
+            review_count: reviews?.length || 0
+          };
+        })
+      );
+
       // Fetch categories
       const { data: categoriesData, error: categoriesError } = await supabase
         .from('product_categories')
@@ -71,7 +93,7 @@ const Marketplace = () => {
 
       if (categoriesError) throw categoriesError;
 
-      setProducts(productsData || []);
+      setProducts(productsWithRating || []);
       setCategories(categoriesData || []);
     } catch (error) {
       console.error('Error fetching marketplace data:', error);
@@ -178,9 +200,19 @@ const Marketplace = () => {
                   <CardTitle className="text-lg font-semibold line-clamp-1">
                     {product.name}
                   </CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    {t('marketplace.by')} {product.user_profiles?.full_name}
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground">
+                      {t('marketplace.by')} {product.user_profiles?.full_name}
+                    </p>
+                    {product.rating && product.rating > 0 && (
+                      <div className="flex items-center gap-1">
+                        <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                        <span className="text-xs text-muted-foreground">
+                          {product.rating.toFixed(1)} ({product.review_count})
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </CardHeader>
                 
                 <CardContent className="pt-0">
