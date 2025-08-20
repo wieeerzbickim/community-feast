@@ -38,13 +38,6 @@ interface Product {
     full_name: string;
     avatar_url: string;
   };
-  producer_profiles: {
-    business_name: string;
-    description: string;
-    pickup_location: string;
-    rating: number;
-    review_count: number;
-  }[] | null;
   product_categories: {
     name: string;
   } | null;
@@ -87,7 +80,6 @@ const ProductDetails = () => {
         .select(`
           *,
           user_profiles(id, full_name, avatar_url),
-          producer_profiles(business_name, description, pickup_location, rating, review_count),
           product_categories(name)
         `)
         .eq('id', id)
@@ -167,7 +159,7 @@ const ProductDetails = () => {
         <div className="container mx-auto px-4 py-8">
           <div className="text-center">
             <h1 className="text-2xl font-bold mb-4">Product not found</h1>
-            <Button onClick={() => navigate('/marketplace')}>
+            <Button onClick={() => navigate('/')}>
               Back to Marketplace
             </Button>
           </div>
@@ -181,7 +173,7 @@ const ProductDetails = () => {
       <div className="container mx-auto px-4 py-8">
         <Button
           variant="ghost"
-          onClick={() => navigate('/marketplace')}
+          onClick={() => navigate('/')}
           className="mb-6"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
@@ -313,28 +305,11 @@ const ProductDetails = () => {
               </Avatar>
               <div className="flex-1">
                 <h3 className="text-xl font-semibold">
-                  {product.producer_profiles?.[0]?.business_name || product.user_profiles?.full_name}
+                  {product.user_profiles?.full_name}
                 </h3>
-                {product.producer_profiles?.[0]?.rating && (
-                  <div className="flex items-center gap-1 mt-1">
-                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    <span className="font-medium">{product.producer_profiles[0].rating.toFixed(1)}</span>
-                    <span className="text-muted-foreground">
-                      ({product.producer_profiles[0].review_count} reviews)
-                    </span>
-                  </div>
-                )}
-                {product.producer_profiles?.[0]?.description && (
-                  <p className="text-muted-foreground mt-2">
-                    {product.producer_profiles[0].description}
-                  </p>
-                )}
-                {product.producer_profiles?.[0]?.pickup_location && (
-                  <div className="flex items-center gap-2 mt-2">
-                    <MapPin className="h-4 w-4" />
-                    <span className="text-sm">{product.producer_profiles[0].pickup_location}</span>
-                  </div>
-                )}
+                <p className="text-muted-foreground mt-2">
+                  Local producer offering fresh, quality products
+                </p>
               </div>
             </div>
           </CardContent>

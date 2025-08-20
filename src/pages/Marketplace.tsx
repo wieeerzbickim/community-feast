@@ -1,15 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
-import { Search, ShoppingCart, Heart, Package } from 'lucide-react';
+import { Search, Package } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -39,8 +36,6 @@ interface Category {
 
 const Marketplace = () => {
   const { t } = useLanguage();
-  const { user } = useAuth();
-  const { toast } = useToast();
   const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -96,41 +91,6 @@ const Marketplace = () => {
 
     return matchesSearch && matchesCategory;
   });
-
-  const addToCart = (product: Product) => {
-    if (!user) {
-      toast({
-        title: "Please sign in",
-        description: "You need to sign in to add items to cart",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const cartKey = `cart_${user.id}`;
-    const existingCart = localStorage.getItem(cartKey);
-    let cartItems = existingCart ? JSON.parse(existingCart) : [];
-    
-    const existingItemIndex = cartItems.findIndex((item: any) => item.product_id === product.id);
-    
-    if (existingItemIndex !== -1) {
-      cartItems[existingItemIndex].quantity += 1;
-    } else {
-      cartItems.push({
-        id: `${product.id}_${Date.now()}`,
-        product_id: product.id,
-        quantity: 1,
-        price_per_unit: product.price
-      });
-    }
-    
-    localStorage.setItem(cartKey, JSON.stringify(cartItems));
-    
-    toast({
-      title: "Added to cart",
-      description: `${product.name} added to your cart`,
-    });
-  };
 
   if (loading) {
     return (
@@ -190,7 +150,11 @@ const Marketplace = () => {
         {filteredProducts.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredProducts.map((product) => (
-              <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+              <Card 
+                key={product.id} 
+                className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+                onClick={() => navigate(`/product/${product.id}`)}
+              >
                 <div className="aspect-square bg-muted relative">
                   {product.featured && (
                     <Badge className="absolute top-2 left-2 bg-primary">
@@ -211,10 +175,7 @@ const Marketplace = () => {
                 </div>
                 
                 <CardHeader className="pb-2">
-                  <CardTitle 
-                    className="text-lg font-semibold line-clamp-1 cursor-pointer hover:text-primary transition-colors"
-                    onClick={() => navigate(`/product/${product.id}`)}
-                  >
+                  <CardTitle className="text-lg font-semibold line-clamp-1">
                     {product.name}
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">
@@ -254,19 +215,9 @@ const Marketplace = () => {
                       </span>
                     )}
                     
-                    <div className="flex gap-2">
-                      <Button variant="ghost" size="icon">
-                        <Heart className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        disabled={!product.made_to_order && product.stock_quantity === 0}
-                        onClick={() => addToCart(product)}
-                      >
-                        <ShoppingCart className="h-4 w-4 mr-2" />
-                        {t('marketplace.addToCart')}
-                      </Button>
-                    </div>
+                    <Badge variant="secondary" className="text-xs">
+                      Kliknij aby wyświetlić
+                    </Badge>
                   </div>
                   
                   {product.tags && product.tags.length > 0 && (
