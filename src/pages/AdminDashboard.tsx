@@ -66,6 +66,7 @@ const AdminDashboard = () => {
         .from('products')
         .select(`
           *,
+          user_profiles(full_name),
           producer_profiles(business_name),
           product_categories(name)
         `)
@@ -437,7 +438,7 @@ const AdminDashboard = () => {
                   {products.slice(0, 10).map((product) => (
                     <TableRow key={product.id}>
                       <TableCell>{product.name}</TableCell>
-                      <TableCell>{product.producer_profiles?.business_name}</TableCell>
+                      <TableCell>{product.producer_profiles?.[0]?.business_name || product.user_profiles?.full_name}</TableCell>
                       <TableCell>{product.product_categories?.name || 'Uncategorized'}</TableCell>
                       <TableCell>${product.price}</TableCell>
                       <TableCell>{product.stock_quantity}</TableCell>

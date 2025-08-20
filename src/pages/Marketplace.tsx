@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
 import { Search, ShoppingCart, Heart, Package } from 'lucide-react';
 
 interface Product {
@@ -21,9 +23,12 @@ interface Product {
   image_url: string | null;
   made_to_order: boolean;
   execution_time_hours: number | null;
+  user_profiles: {
+    full_name: string;
+  } | null;
   producer_profiles: {
     business_name: string;
-  };
+  }[] | null;
   product_categories: {
     name: string;
   } | null;
@@ -36,6 +41,8 @@ interface Category {
 
 const Marketplace = () => {
   const { t } = useLanguage();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,6 +60,7 @@ const Marketplace = () => {
         .from('products')
         .select(`
           *,
+          user_profiles(full_name),
           producer_profiles(business_name),
           product_categories(name)
         `)
@@ -80,15 +88,51 @@ const Marketplace = () => {
   };
 
   const filteredProducts = products.filter(product => {
+    const producerName = product.producer_profiles?.[0]?.business_name || product.user_profiles?.full_name || '';
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.producer_profiles?.business_name.toLowerCase().includes(searchTerm.toLowerCase());
+                         producerName.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesCategory = selectedCategory === 'all' || 
                            product.product_categories?.name === selectedCategory;
 
     return matchesSearch && matchesCategory;
   });
+
+  const addToCart = (product: Product) => {
+    if (!user) {
+      toast({
+        title: "Please sign in",
+        description: "You need to sign in to add items to cart",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const cartKey = `cart_${user.id}`;
+    const existingCart = localStorage.getItem(cartKey);
+    let cartItems = existingCart ? JSON.parse(existingCart) : [];
+    
+    const existingItemIndex = cartItems.findIndex((item: any) => item.product_id === product.id);
+    
+    if (existingItemIndex !== -1) {
+      cartItems[existingItemIndex].quantity += 1;
+    } else {
+      cartItems.push({
+        id: `${product.id}_${Date.now()}`,
+        product_id: product.id,
+        quantity: 1,
+        price_per_unit: product.price
+      });
+    }
+    
+    localStorage.setItem(cartKey, JSON.stringify(cartItems));
+    
+    toast({
+      title: "Added to cart",
+      description: `${product.name} added to your cart`,
+    });
+  };
 
   if (loading) {
     return (
@@ -173,7 +217,7 @@ const Marketplace = () => {
                     {product.name}
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    {t('marketplace.by')} {product.producer_profiles?.business_name}
+                    {t('marketplace.by')} {product.producer_profiles?.[0]?.business_name || product.user_profiles?.full_name}
                   </p>
                 </CardHeader>
                 
@@ -216,6 +260,7 @@ const Marketplace = () => {
                       <Button 
                         size="sm" 
                         disabled={!product.made_to_order && product.stock_quantity === 0}
+                        onClick={() => addToCart(product)}
                       >
                         <ShoppingCart className="h-4 w-4 mr-2" />
                         {t('marketplace.addToCart')}
