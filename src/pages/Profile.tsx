@@ -34,7 +34,8 @@ const Profile = () => {
     pickup_instructions: '',
     delivery_available: false,
     delivery_radius_miles: 0,
-    delivery_fee: 0
+    delivery_fee: 0,
+    avatar_url: ''
   });
 
   useEffect(() => {
@@ -77,7 +78,8 @@ const Profile = () => {
           pickup_instructions: data.pickup_instructions || '',
           delivery_available: data.delivery_available || false,
           delivery_radius_miles: data.delivery_radius_miles || 0,
-          delivery_fee: data.delivery_fee || 0
+          delivery_fee: data.delivery_fee || 0,
+          avatar_url: ''
         });
       }
     } catch (error) {

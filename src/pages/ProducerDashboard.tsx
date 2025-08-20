@@ -286,7 +286,11 @@ const ProducerDashboard = () => {
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Button variant="ghost" size="icon">
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => navigate(`/producer/edit-product/${product.id}`)}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button 

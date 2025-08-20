@@ -13,7 +13,10 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AddProduct from "./pages/AddProduct";
 import Cart from "./pages/Cart";
 import Profile from "./pages/Profile";
+import ProductDetails from "./pages/ProductDetails";
+import EditProduct from "./pages/EditProduct";
 import NotFound from "./pages/NotFound";
+import OrderHistory from "./pages/OrderHistory";
 
 const queryClient = new QueryClient();
 
@@ -31,9 +34,12 @@ const App = () => (
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/producer-dashboard" element={<ProducerDashboard />} />
               <Route path="/producer/add-product" element={<AddProduct />} />
+              <Route path="/producer/edit-product/:id" element={<EditProduct />} />
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/cart" element={<Cart />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/product/:id" element={<ProductDetails />} />
+              <Route path="/orders" element={<OrderHistory />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

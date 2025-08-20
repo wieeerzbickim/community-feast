@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -40,6 +41,7 @@ const Marketplace = () => {
   const { t } = useLanguage();
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -209,7 +211,10 @@ const Marketplace = () => {
                 </div>
                 
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-lg font-semibold line-clamp-1">
+                  <CardTitle 
+                    className="text-lg font-semibold line-clamp-1 cursor-pointer hover:text-primary transition-colors"
+                    onClick={() => navigate(`/product/${product.id}`)}
+                  >
                     {product.name}
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">
