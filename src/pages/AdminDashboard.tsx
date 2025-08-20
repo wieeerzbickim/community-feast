@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -15,6 +16,7 @@ import { Navigate } from 'react-router-dom';
 
 const AdminDashboard = () => {
   const { user, isAdmin, loading } = useAuth();
+  const { t } = useLanguage();
   const { toast } = useToast();
   const [users, setUsers] = useState<any[]>([]);
   const [producers, setProducers] = useState<any[]>([]);
@@ -194,12 +196,12 @@ const AdminDashboard = () => {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-primary">Admin Dashboard</h1>
-          <p className="text-muted-foreground">Manage your LocalHarvest Hub platform</p>
+          <h1 className="text-3xl font-bold text-primary">{t('admin.dashboard')}</h1>
+          <p className="text-muted-foreground">{t('admin.managePlatform')}</p>
         </div>
         <Badge variant="secondary" className="bg-primary/10 text-primary">
           <Shield className="w-4 h-4 mr-1" />
-          Administrator
+          {t('admin.administrator')}
         </Badge>
       </div>
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -10,7 +11,8 @@ import {
   Store, 
   Settings,
   LogOut,
-  Menu
+  Menu,
+  Languages
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -23,6 +25,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 const Navbar = () => {
   const { user, userProfile, signOut, isProducer, isAdmin } = useAuth();
+  const { language, setLanguage, t } = useLanguage();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
@@ -33,16 +36,16 @@ const Navbar = () => {
   const NavLinks = () => (
     <>
       <Link to="/" className="text-foreground hover:text-primary transition-colors">
-        Marketplace
+        {t('nav.marketplace')}
       </Link>
       {isProducer && (
         <Link to="/producer-dashboard" className="text-foreground hover:text-primary transition-colors">
-          Dashboard
+          {t('nav.dashboard')}
         </Link>
       )}
       {isAdmin && (
         <Link to="/admin" className="text-foreground hover:text-primary transition-colors">
-          Admin
+          {t('nav.admin')}
         </Link>
       )}
     </>
@@ -63,6 +66,23 @@ const Navbar = () => {
           </div>
 
           <div className="flex items-center space-x-4">
+            {/* Language Switcher */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Languages className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setLanguage('pl')}>
+                  🇵🇱 Polski
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setLanguage('en')}>
+                  🇺🇸 English
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             {user ? (
               <>
                 <Link to="/cart">
@@ -87,14 +107,14 @@ const Navbar = () => {
                     <DropdownMenuItem asChild>
                       <Link to="/profile" className="flex items-center">
                         <User className="mr-2 h-4 w-4" />
-                        Profile
+                        {t('nav.profile')}
                       </Link>
                     </DropdownMenuItem>
                     {isProducer && (
                       <DropdownMenuItem asChild>
                         <Link to="/producer-dashboard" className="flex items-center">
                           <Store className="mr-2 h-4 w-4" />
-                          Producer Dashboard
+                          {t('nav.producerDashboard')}
                         </Link>
                       </DropdownMenuItem>
                     )}
@@ -102,21 +122,21 @@ const Navbar = () => {
                       <DropdownMenuItem asChild>
                         <Link to="/admin" className="flex items-center">
                           <Settings className="mr-2 h-4 w-4" />
-                          Admin Panel
+                          {t('nav.adminPanel')}
                         </Link>
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut}>
                       <LogOut className="mr-2 h-4 w-4" />
-                      Sign Out
+                      {t('nav.signOut')}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </>
             ) : (
               <Link to="/auth">
-                <Button>Sign In</Button>
+                <Button>{t('nav.signIn')}</Button>
               </Link>
             )}
 

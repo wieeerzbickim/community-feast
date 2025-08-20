@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
-import { Search, Filter, ShoppingCart, MapPin, Star, Bell } from 'lucide-react';
+import { Search, ShoppingCart, Heart, Package } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -18,121 +17,73 @@ interface Product {
   stock_quantity: number;
   is_available: boolean;
   featured: boolean;
+  tags: string[];
   producer_profiles: {
     business_name: string;
-    pickup_location: string;
-    delivery_available: boolean;
-    delivery_fee: number;
-    rating: number;
   };
   product_categories: {
     name: string;
-  };
-  product_images: {
-    image_url: string;
-    is_primary: boolean;
-  }[];
+  } | null;
+}
+
+interface Category {
+  id: string;
+  name: string;
 }
 
 const Marketplace = () => {
-  const { user, isConsumer } = useAuth();
-  const { toast } = useToast();
+  const { t } = useLanguage();
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [cart, setCart] = useState<{[key: string]: number}>({});
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
   useEffect(() => {
-    fetchProducts();
-    fetchCategories();
+    fetchData();
   }, []);
 
-  const fetchProducts = async () => {
-    const { data, error } = await supabase
-      .from('products')
-      .select(`
-        *,
-        producer_profiles(business_name, pickup_location, delivery_available, delivery_fee, rating),
-        product_categories(name),
-        product_images(image_url, is_primary)
-      `)
-      .eq('is_available', true)
-      .order('featured', { ascending: false })
-      .order('created_at', { ascending: false });
+  const fetchData = async () => {
+    try {
+      // Fetch products with producer and category info
+      const { data: productsData, error: productsError } = await supabase
+        .from('products')
+        .select(`
+          *,
+          producer_profiles(business_name),
+          product_categories(name)
+        `)
+        .eq('is_available', true)
+        .order('featured', { ascending: false })
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      toast({
-        title: "Error loading products",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      setProducts(data || []);
-    }
-    setLoading(false);
-  };
+      if (productsError) throw productsError;
 
-  const fetchCategories = async () => {
-    const { data } = await supabase
-      .from('product_categories')
-      .select('*')
-      .order('name');
-    
-    setCategories(data || []);
-  };
+      // Fetch categories
+      const { data: categoriesData, error: categoriesError } = await supabase
+        .from('product_categories')
+        .select('*')
+        .order('name');
 
-  const addToCart = (productId: string) => {
-    setCart(prev => ({
-      ...prev,
-      [productId]: (prev[productId] || 0) + 1
-    }));
-    toast({
-      title: "Added to cart",
-      description: "Item added to your cart successfully.",
-    });
-  };
+      if (categoriesError) throw categoriesError;
 
-  const joinWaitingList = async (productId: string) => {
-    if (!user) {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in to join the waiting list.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const { error } = await supabase
-      .from('waiting_lists')
-      .insert({
-        product_id: productId,
-        consumer_id: user.id
-      });
-
-    if (error) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Added to waiting list",
-        description: "You'll be notified when this product is available.",
-      });
+      setProducts(productsData || []);
+      setCategories(categoriesData || []);
+    } catch (error) {
+      console.error('Error fetching marketplace data:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.producer_profiles.business_name.toLowerCase().includes(searchTerm.toLowerCase());
+                         product.producer_profiles?.business_name.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesCategory = selectedCategory === 'all' || 
                            product.product_categories?.name === selectedCategory;
-    
+
     return matchesSearch && matchesCategory;
   });
 
@@ -141,7 +92,7 @@ const Marketplace = () => {
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8">
           <div className="flex justify-center items-center h-64">
-            <div className="text-lg">Loading products...</div>
+            <div className="text-lg">{t('common.loading')}</div>
           </div>
         </div>
       </div>
@@ -150,36 +101,38 @@ const Marketplace = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
-        {/* Hero Section */}
-        <div className="text-center mb-12">
+      {/* Hero Section */}
+      <div className="bg-gradient-to-r from-primary/10 to-primary/5 border-b">
+        <div className="container mx-auto px-4 py-16 text-center">
           <h1 className="text-4xl font-bold text-primary mb-4">
-            Fresh Local Products
+            {t('marketplace.title')}
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Discover amazing homemade and artisanal food products from local producers in your community
+            {t('marketplace.subtitle')}
           </p>
         </div>
+      </div>
 
+      <div className="container mx-auto px-4 py-8">
         {/* Search and Filters */}
         <div className="flex flex-col md:flex-row gap-4 mb-8">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search products, producers, or descriptions..."
+              placeholder={t('marketplace.searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
             />
           </div>
+          
           <Select value={selectedCategory} onValueChange={setSelectedCategory}>
             <SelectTrigger className="w-full md:w-48">
-              <Filter className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Category" />
+              <SelectValue placeholder={t('marketplace.allCategories')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {categories.map(category => (
+              <SelectItem value="all">{t('marketplace.allCategories')}</SelectItem>
+              {categories.map((category) => (
                 <SelectItem key={category.id} value={category.name}>
                   {category.name}
                 </SelectItem>
@@ -189,109 +142,91 @@ const Marketplace = () => {
         </div>
 
         {/* Products Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredProducts.map(product => {
-            const primaryImage = product.product_images?.find(img => img.is_primary)?.image_url;
-            const isOutOfStock = product.stock_quantity === 0;
-            
-            return (
+        {filteredProducts.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredProducts.map((product) => (
               <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                 <div className="aspect-square bg-muted relative">
-                  {primaryImage ? (
-                    <img 
-                      src={primaryImage} 
-                      alt={product.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                      No image
-                    </div>
-                  )}
                   {product.featured && (
-                    <Badge className="absolute top-2 left-2 bg-accent">
-                      Featured
+                    <Badge className="absolute top-2 left-2 bg-primary">
+                      {t('producer.featured')}
                     </Badge>
                   )}
-                  {isOutOfStock && (
-                    <Badge variant="destructive" className="absolute top-2 right-2">
-                      Out of Stock
-                    </Badge>
-                  )}
+                  <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                    <Package className="h-16 w-16" />
+                  </div>
                 </div>
                 
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">{product.name}</CardTitle>
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <MapPin className="h-4 w-4 mr-1" />
-                    {product.producer_profiles.business_name}
-                  </div>
-                  {product.producer_profiles.rating > 0 && (
-                    <div className="flex items-center">
-                      <Star className="h-4 w-4 text-accent mr-1" />
-                      <span className="text-sm">{product.producer_profiles.rating.toFixed(1)}</span>
-                    </div>
-                  )}
+                  <CardTitle className="text-lg font-semibold line-clamp-1">
+                    {product.name}
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    {t('marketplace.by')} {product.producer_profiles?.business_name}
+                  </p>
                 </CardHeader>
                 
-                <CardContent>
-                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                <CardContent className="pt-0">
+                  <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
                     {product.description}
                   </p>
                   
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="text-2xl font-bold text-primary">
-                      ${product.price.toFixed(2)}
-                      <span className="text-sm font-normal text-muted-foreground">
-                        /{product.unit}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="text-xl font-bold text-primary">
+                      {product.price.toFixed(2)} PLN
+                      <span className="text-sm font-normal text-muted-foreground ml-1">
+                        / {product.unit}
                       </span>
                     </div>
-                    {!isOutOfStock && (
+                    <Badge variant="outline" className="text-xs">
+                      {product.product_categories?.name || t('admin.uncategorized')}
+                    </Badge>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    {product.stock_quantity > 0 ? (
                       <span className="text-sm text-muted-foreground">
-                        {product.stock_quantity} available
+                        {product.stock_quantity} {t('producer.inStock')}
+                      </span>
+                    ) : (
+                      <span className="text-sm text-destructive">
+                        {t('marketplace.outOfStock')}
                       </span>
                     )}
-                  </div>
-
-                  <div className="space-y-2">
-                    {isOutOfStock ? (
-                      <Button 
-                        variant="outline" 
-                        className="w-full"
-                        onClick={() => joinWaitingList(product.id)}
-                        disabled={!isConsumer}
-                      >
-                        <Bell className="h-4 w-4 mr-2" />
-                        Notify When Available
+                    
+                    <div className="flex gap-2">
+                      <Button variant="ghost" size="icon">
+                        <Heart className="h-4 w-4" />
                       </Button>
-                    ) : (
                       <Button 
-                        className="w-full"
-                        onClick={() => addToCart(product.id)}
-                        disabled={!isConsumer}
+                        size="sm" 
+                        disabled={product.stock_quantity === 0}
                       >
                         <ShoppingCart className="h-4 w-4 mr-2" />
-                        Add to Cart
+                        {t('marketplace.addToCart')}
                       </Button>
-                    )}
-                    
-                    {product.producer_profiles.delivery_available && (
-                      <div className="text-xs text-muted-foreground text-center">
-                        Delivery available (+${product.producer_profiles.delivery_fee})
-                      </div>
-                    )}
+                    </div>
                   </div>
+                  
+                  {product.tags && product.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-3">
+                      {product.tags.slice(0, 3).map((tag, index) => (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
-            );
-          })}
-        </div>
-
-        {filteredProducts.length === 0 && (
+            ))}
+          </div>
+        ) : (
           <div className="text-center py-16">
-            <h3 className="text-xl font-semibold mb-2">No products found</h3>
-            <p className="text-muted-foreground">
-              Try adjusting your search terms or category filter
+            <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-xl font-semibold mb-2">{t('marketplace.noProducts')}</h3>
+            <p className="text-muted-foreground max-w-md mx-auto">
+              {t('marketplace.noProductsDesc')}
             </p>
           </div>
         )}
