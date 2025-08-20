@@ -8,6 +8,7 @@ import Navbar from "./components/Navbar";
 import Marketplace from "./pages/Marketplace";
 import AuthPage from "./pages/AuthPage";
 import ProducerDashboard from "./pages/ProducerDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
             <Route path="/" element={<Marketplace />} />
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/producer-dashboard" element={<ProducerDashboard />} />
+            <Route path="/admin" element={<AdminDashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
