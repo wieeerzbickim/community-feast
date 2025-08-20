@@ -355,7 +355,11 @@ const ProductDetails = () => {
 
         {/* Reviews */}
         <div className="mt-8 space-y-6">
-          <ProductReviewForm productId={id!} onReviewSubmitted={onReviewSubmitted} />
+          <ProductReviewForm 
+            productId={id!} 
+            producerId={product.producer_id} 
+            onReviewSubmitted={onReviewSubmitted} 
+          />
           
           {reviews.length > 0 && (
             <Card>

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import ProducerReviewForm from '@/components/ProducerReviewForm';
 import { 
   ArrowLeft, 
@@ -67,6 +68,7 @@ const ProducerProfile = () => {
   const [loading, setLoading] = useState(true);
   const [reviewFilter, setReviewFilter] = useState<'all' | 'products' | 'producer'>('all');
   const [averageRating, setAverageRating] = useState(0);
+  const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -161,6 +163,7 @@ const ProducerProfile = () => {
 
   const onReviewSubmitted = () => {
     fetchProducerData();
+    setIsReviewDialogOpen(false);
   };
 
   const filteredReviews = reviews.filter(review => {
@@ -222,7 +225,23 @@ const ProducerProfile = () => {
               <div className="flex-1">
                 <div className="flex items-center justify-between mb-2">
                   <h1 className="text-3xl font-bold">{producer.full_name}</h1>
-                  <Badge variant="default">Producer</Badge>
+                  <div className="flex items-center gap-2">
+                    <Dialog open={isReviewDialogOpen} onOpenChange={setIsReviewDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <Star className="h-4 w-4 mr-2" />
+                          Rate Producer
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Rate {producer.full_name}</DialogTitle>
+                        </DialogHeader>
+                        <ProducerReviewForm producerId={id!} onReviewSubmitted={onReviewSubmitted} />
+                      </DialogContent>
+                    </Dialog>
+                    <Badge variant="default">Producer</Badge>
+                  </div>
                 </div>
                 
                 <div className="flex items-center gap-6 mb-4">
@@ -338,8 +357,6 @@ const ProducerProfile = () => {
 
           <TabsContent value="reviews">
             <div className="space-y-6">
-              <ProducerReviewForm producerId={id!} onReviewSubmitted={onReviewSubmitted} />
-              
               <div className="flex items-center gap-4">
                 <Filter className="h-4 w-4" />
                 <Select value={reviewFilter} onValueChange={(value: 'all' | 'products' | 'producer') => setReviewFilter(value)}>

@@ -44,13 +44,57 @@ const ProducerReviewForm: React.FC<ProducerReviewFormProps> = ({ producerId, onR
     setSubmitting(true);
 
     try {
+      // First create a dummy order for the review (required by schema)
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          consumer_id: user.id,
+          producer_id: producerId,
+          total_amount: 0,
+          status: 'completed',
+          delivery_method: 'pickup'
+        })
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+
+      // For producer reviews, we need a product_id. Let's get any product from this producer
+      let productId;
+      const { data: producerProduct } = await supabase
+        .from('products')
+        .select('id')
+        .eq('producer_id', producerId)
+        .limit(1)
+        .maybeSingle();
+
+      if (producerProduct) {
+        productId = producerProduct.id;
+      } else {
+        // Create a dummy product for this producer review
+        const { data: dummyProduct, error: dummyProductError } = await supabase
+          .from('products')
+          .insert({
+            name: 'Producer Review',
+            price: 0,
+            producer_id: producerId,
+            is_available: false,
+            stock_quantity: 0
+          })
+          .select()
+          .single();
+
+        if (dummyProductError) throw dummyProductError;
+        productId = dummyProduct.id;
+      }
+
       const { error } = await supabase
         .from('reviews')
         .insert({
           producer_id: producerId,
           consumer_id: user.id,
-          product_id: '', // For producer reviews, this might be empty
-          order_id: '', // We'll need to handle this
+          product_id: productId,
+          order_id: orderData.id,
           rating,
           comment: comment.trim() || null,
         });

@@ -9,10 +9,11 @@ import { Star } from 'lucide-react';
 
 interface ProductReviewFormProps {
   productId: string;
+  producerId: string;
   onReviewSubmitted: () => void;
 }
 
-const ProductReviewForm: React.FC<ProductReviewFormProps> = ({ productId, onReviewSubmitted }) => {
+const ProductReviewForm: React.FC<ProductReviewFormProps> = ({ productId, producerId, onReviewSubmitted }) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [rating, setRating] = useState(0);
@@ -44,13 +45,28 @@ const ProductReviewForm: React.FC<ProductReviewFormProps> = ({ productId, onRevi
     setSubmitting(true);
 
     try {
+      // First create a dummy order for the review (required by schema)
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          consumer_id: user.id,
+          producer_id: producerId,
+          total_amount: 0,
+          status: 'completed',
+          delivery_method: 'pickup'
+        })
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+
       const { error } = await supabase
         .from('reviews')
         .insert({
           product_id: productId,
           consumer_id: user.id,
-          producer_id: '', // We'll need to get this from the product
-          order_id: '', // We'll need to handle this differently
+          producer_id: producerId,
+          order_id: orderData.id,
           rating,
           comment: comment.trim() || null,
         });
