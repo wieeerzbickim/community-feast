@@ -427,7 +427,7 @@ export type Database = {
             foreignKeyName: "reviews_producer_id_fkey"
             columns: ["producer_id"]
             isOneToOne: false
-            referencedRelation: "producer_profiles"
+            referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
           {
