@@ -158,6 +158,9 @@ const Cart = () => {
       return;
     }
 
+    // Open a new tab immediately to avoid popup blockers
+    const newTab = window.open('about:blank', '_blank');
+
     try {
       setLoading(true);
       
@@ -181,12 +184,19 @@ const Cart = () => {
         throw error;
       }
 
-      if (data.url) {
-        // Open Stripe checkout in a new tab
-        window.open(data.url, '_blank');
+      if (data?.url) {
+        if (newTab) {
+          newTab.location.href = data.url;
+        } else {
+          window.location.href = data.url;
+        }
+        return;
       }
+
+      throw new Error('No checkout URL returned');
     } catch (error) {
       console.error('Checkout error:', error);
+      if (newTab) newTab.close();
       toast({
         title: "Error",
         description: "Failed to create payment session. Please try again.",
