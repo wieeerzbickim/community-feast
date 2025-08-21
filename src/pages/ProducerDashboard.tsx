@@ -137,7 +137,7 @@ const ProducerDashboard = () => {
         .from('reviews')
         .select(`
           *,
-          user_profiles(full_name, avatar_url),
+          user_profiles!consumer_id(full_name, avatar_url),
           products(name)
         `)
         .eq('producer_id', user.id)

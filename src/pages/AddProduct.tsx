@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { ArrowLeft, Package, Upload, X, Camera } from 'lucide-react';
+import { ArrowLeft, Package, Upload, X, Camera, Info } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -60,6 +60,7 @@ const AddProduct = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [commissionRate, setCommissionRate] = useState<number>(12);
 
   const {
     register,
@@ -79,6 +80,7 @@ const AddProduct = () => {
   const watchedIsAvailable = watch('is_available');
   const watchedFeatured = watch('featured');
   const watchedMadeToOrder = watch('made_to_order');
+  const watchedPrice = watch('price');
 
   useEffect(() => {
     if (!isProducer) {
@@ -86,6 +88,7 @@ const AddProduct = () => {
       return;
     }
     fetchCategories();
+    fetchCommissionRate();
   }, [isProducer, navigate]);
 
   const fetchCategories = async () => {
@@ -105,6 +108,29 @@ const AddProduct = () => {
         variant: 'destructive',
       });
     }
+  };
+
+  const fetchCommissionRate = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('admin_settings')
+        .select('value')
+        .eq('key', 'transaction_fee_percent')
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setCommissionRate(parseFloat(data.value));
+      }
+    } catch (error) {
+      console.error('Error fetching commission rate:', error);
+    }
+  };
+
+  const calculateProducerEarnings = (customerPrice: string): number => {
+    if (!customerPrice || isNaN(parseFloat(customerPrice))) return 0;
+    const price = parseFloat(customerPrice);
+    return price * (1 - commissionRate / 100);
   };
 
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -366,20 +392,68 @@ const AddProduct = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="price">{t('addProduct.price')} (PLN) *</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    step="0.01"
-                    {...register('price')}
-                    placeholder={t('addProduct.pricePlaceholder')}
-                  />
-                  {errors.price && (
-                    <p className="text-sm text-destructive">{t(errors.price.message || '')}</p>
+              {/* Pricing Section */}
+              <Card className="bg-muted/50">
+                <CardHeader>
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Info className="h-4 w-4" />
+                    Struktura cenowa
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="price">Cena dla klienta (PLN) *</Label>
+                      <Input
+                        id="price"
+                        type="number"
+                        step="0.01"
+                        {...register('price')}
+                        placeholder="0.00"
+                      />
+                      {errors.price && (
+                        <p className="text-sm text-destructive">{t(errors.price.message || '')}</p>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Twoje zarobki (PLN)</Label>
+                      <div className="relative">
+                        <Input
+                          type="text"
+                          value={watchedPrice ? calculateProducerEarnings(watchedPrice).toFixed(2) : '0.00'}
+                          disabled
+                          className="bg-background"
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Po odliczeniu prowizji ({commissionRate}%)
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {watchedPrice && (
+                    <div className="border rounded-lg p-3 bg-background">
+                      <div className="text-sm space-y-1">
+                        <div className="flex justify-between">
+                          <span>Cena dla klienta:</span>
+                          <span className="font-medium">{parseFloat(watchedPrice || '0').toFixed(2)} PLN</span>
+                        </div>
+                        <div className="flex justify-between text-muted-foreground">
+                          <span>Prowizja platformy ({commissionRate}%):</span>
+                          <span>-{(parseFloat(watchedPrice || '0') * commissionRate / 100).toFixed(2)} PLN</span>
+                        </div>
+                        <div className="flex justify-between font-medium text-primary border-t pt-1">
+                          <span>Twoje zarobki:</span>
+                          <span>{calculateProducerEarnings(watchedPrice).toFixed(2)} PLN</span>
+                        </div>
+                      </div>
+                    </div>
                   )}
-                </div>
+                </CardContent>
+              </Card>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                 <div className="space-y-2">
                   <Label htmlFor="unit">{t('addProduct.unit')} *</Label>
@@ -392,6 +466,9 @@ const AddProduct = () => {
                     <p className="text-sm text-destructive">{t(errors.unit.message || '')}</p>
                   )}
                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
 
                 {!watchedMadeToOrder ? (
                   <div className="space-y-2">
