@@ -6,7 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { ShoppingCart, Trash2, Plus, Minus, Package } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { ShoppingCart, Trash2, Plus, Minus, Package, MapPin } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 
 interface CartItem {
@@ -36,6 +39,8 @@ const Cart = () => {
   const { toast } = useToast();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deliveryMethod, setDeliveryMethod] = useState('pickup');
+  const [deliveryAddress, setDeliveryAddress] = useState('');
 
   useEffect(() => {
     if (user && isConsumer) {
@@ -120,11 +125,39 @@ const Cart = () => {
     });
   };
 
-  const getTotalPrice = () => {
+  const getSubtotal = () => {
     return cartItems.reduce((total, item) => total + (item.price_per_unit * item.quantity), 0);
   };
 
+  const getDeliveryFee = () => {
+    return deliveryMethod === 'delivery' ? 15 : 0;
+  };
+
+  const getTotalPrice = () => {
+    return getSubtotal() + getDeliveryFee();
+  };
+
+  const warsawDeliveryLocations = [
+    'Centrum',
+    'Mokotów', 
+    'Żoliborz',
+    'Praga-Południe',
+    'Praga-Północ',
+    'Ochota',
+    'Wola',
+    'Ursynów'
+  ];
+
   const proceedToCheckout = async () => {
+    if (deliveryMethod === 'delivery' && !deliveryAddress.trim()) {
+      toast({
+        title: "Error",
+        description: "Please provide a delivery address for Warsaw delivery.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setLoading(true);
       
@@ -136,7 +169,12 @@ const Cart = () => {
       }));
 
       const { data, error } = await supabase.functions.invoke('create-payment', {
-        body: { cartItems: paymentItems }
+        body: { 
+          cartItems: paymentItems,
+          deliveryMethod,
+          deliveryAddress: deliveryMethod === 'delivery' ? deliveryAddress : null,
+          deliveryFee: getDeliveryFee()
+        }
       });
 
       if (error) {
@@ -281,7 +319,49 @@ const Cart = () => {
             </div>
 
             {/* Order Summary */}
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-1 space-y-6">
+              {/* Delivery Options */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MapPin className="h-5 w-5" />
+                    Delivery Options
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <RadioGroup value={deliveryMethod} onValueChange={setDeliveryMethod}>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="pickup" id="pickup" />
+                      <Label htmlFor="pickup">Pickup (Free)</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="delivery" id="delivery" />
+                      <Label htmlFor="delivery">Warsaw Delivery (15 PLN)</Label>
+                    </div>
+                  </RadioGroup>
+
+                  {deliveryMethod === 'delivery' && (
+                    <div className="space-y-3">
+                      <Label htmlFor="address">Delivery Address in Warsaw</Label>
+                      <Input
+                        id="address"
+                        placeholder="Enter your address in Warsaw"
+                        value={deliveryAddress}
+                        onChange={(e) => setDeliveryAddress(e.target.value)}
+                      />
+                      <div className="text-sm text-muted-foreground">
+                        <p className="font-medium mb-2">Available delivery areas:</p>
+                        <div className="grid grid-cols-2 gap-1">
+                          {warsawDeliveryLocations.map(location => (
+                            <span key={location} className="text-xs">• {location}</span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
               <Card className="sticky top-8">
                 <CardHeader>
                   <CardTitle>Order Summary</CardTitle>
@@ -289,11 +369,11 @@ const Cart = () => {
                 <CardContent className="space-y-4">
                   <div className="flex justify-between">
                     <span>Subtotal ({cartItems.length} items)</span>
-                    <span>{getTotalPrice().toFixed(2)} PLN</span>
+                    <span>{getSubtotal().toFixed(2)} PLN</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Delivery fee</span>
-                    <span>Calculated at checkout</span>
+                    <span>{getDeliveryFee().toFixed(2)} PLN</span>
                   </div>
                   <div className="border-t pt-4">
                     <div className="flex justify-between font-bold text-lg">

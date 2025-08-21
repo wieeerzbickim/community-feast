@@ -13,6 +13,13 @@ interface CartItem {
   price_per_unit: number;
 }
 
+interface PaymentRequest {
+  cartItems: CartItem[];
+  deliveryMethod?: string;
+  deliveryAddress?: string | null;
+  deliveryFee?: number;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -36,7 +43,7 @@ serve(async (req) => {
       throw new Error("User not authenticated");
     }
 
-    const { cartItems } = await req.json() as { cartItems: CartItem[] };
+    const { cartItems, deliveryMethod = 'pickup', deliveryAddress = null, deliveryFee = 0 } = await req.json() as PaymentRequest;
 
     if (!cartItems || cartItems.length === 0) {
       throw new Error("No items in cart");
@@ -66,13 +73,12 @@ serve(async (req) => {
     // Calculate totals
     const subtotal = cartItems.reduce((total, item) => total + (item.price_per_unit * item.quantity), 0);
     const commissionAmount = subtotal * (commissionRate / 100);
-    const totalAmount = subtotal; // Customer pays full price, commission is deducted from producer
+    const totalAmount = subtotal + deliveryFee; // Customer pays subtotal + delivery fee
 
-    // Create Stripe checkout session
-    const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      customer_email: customerId ? undefined : user.email,
-      line_items: cartItems.map(item => ({
+    // Create line items for Stripe
+    const lineItems = [
+      // Product line items
+      ...cartItems.map(item => ({
         price_data: {
           currency: "pln",
           product_data: {
@@ -81,7 +87,28 @@ serve(async (req) => {
           unit_amount: Math.round(item.price_per_unit * 100), // Convert to grosz
         },
         quantity: item.quantity,
-      })),
+      }))
+    ];
+
+    // Add delivery fee as separate line item if applicable
+    if (deliveryFee > 0) {
+      lineItems.push({
+        price_data: {
+          currency: "pln",
+          product_data: {
+            name: "Warsaw Delivery",
+          },
+          unit_amount: Math.round(deliveryFee * 100), // Convert to grosz
+        },
+        quantity: 1,
+      });
+    }
+
+    // Create Stripe checkout session
+    const session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      customer_email: customerId ? undefined : user.email,
+      line_items: lineItems,
       mode: "payment",
       success_url: `${req.headers.get("origin")}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.get("origin")}/cart`,
@@ -89,10 +116,14 @@ serve(async (req) => {
         user_id: user.id,
         commission_rate: commissionRate.toString(),
         commission_amount: commissionAmount.toFixed(2),
+        delivery_method: deliveryMethod,
+        delivery_address: deliveryAddress || '',
+        delivery_fee: deliveryFee.toString(),
+        subtotal: subtotal.toFixed(2),
       }
     });
 
-    console.log(`Payment session created for user ${user.id}, amount: ${totalAmount} PLN, commission: ${commissionAmount.toFixed(2)} PLN`);
+    console.log(`Payment session created for user ${user.id}, subtotal: ${subtotal} PLN, delivery: ${deliveryFee} PLN, total: ${totalAmount} PLN, commission: ${commissionAmount.toFixed(2)} PLN`);
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
