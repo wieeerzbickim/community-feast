@@ -125,10 +125,38 @@ const Cart = () => {
   };
 
   const proceedToCheckout = async () => {
-    toast({
-      title: "Coming Soon",
-      description: "Checkout functionality will be available soon",
-    });
+    try {
+      setLoading(true);
+      
+      // Prepare cart items for payment
+      const paymentItems = cartItems.map(item => ({
+        product_id: item.product_id,
+        quantity: item.quantity,
+        price_per_unit: item.price_per_unit
+      }));
+
+      const { data, error } = await supabase.functions.invoke('create-payment', {
+        body: { cartItems: paymentItems }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.url) {
+        // Open Stripe checkout in a new tab
+        window.open(data.url, '_blank');
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create payment session. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!user) {

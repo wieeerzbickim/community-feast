@@ -18,6 +18,8 @@ import EditProduct from "./pages/EditProduct";
 import NotFound from "./pages/NotFound";
 import OrderHistory from "./pages/OrderHistory";
 import ProducerProfile from "./pages/ProducerProfile";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentCancel from "./pages/PaymentCancel";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +44,8 @@ const App = () => (
               <Route path="/product/:id" element={<ProductDetails />} />
               <Route path="/producer/:id" element={<ProducerProfile />} />
               <Route path="/orders" element={<OrderHistory />} />
+              <Route path="/payment-success" element={<PaymentSuccess />} />
+              <Route path="/payment-cancel" element={<PaymentCancel />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
