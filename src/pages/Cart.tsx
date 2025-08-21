@@ -305,9 +305,9 @@ const Cart = () => {
                     className="w-full" 
                     size="lg"
                     onClick={proceedToCheckout}
-                    disabled={cartItems.length === 0}
+                    disabled={cartItems.length === 0 || loading}
                   >
-                    Proceed to Checkout
+                    {loading ? 'Processing...' : 'Proceed to Checkout'}
                   </Button>
                 </CardContent>
               </Card>

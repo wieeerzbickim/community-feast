@@ -143,20 +143,45 @@ const ProductDetails = () => {
       return;
     }
 
-    const cartItems = JSON.parse(localStorage.getItem('cart') || '[]');
-    const existingItem = cartItems.find((item: any) => item.productId === id);
+    if (!product) return;
 
-    if (existingItem) {
-      existingItem.quantity += quantity;
+    // Use user-specific cart key matching Cart.tsx
+    const cartKey = `cart_${user.id}`;
+    const cartItems = JSON.parse(localStorage.getItem(cartKey) || '[]');
+    
+    // Create cart item with proper structure matching Cart.tsx expectations
+    const cartItem = {
+      id: `${product.id}_${Date.now()}`, // unique id for cart item
+      product_id: product.id,
+      quantity: quantity,
+      price_per_unit: product.price,
+      product: {
+        name: product.name,
+        image_url: product.image_url,
+        unit: product.unit,
+        stock_quantity: product.stock_quantity,
+        is_available: product.is_available,
+        made_to_order: product.made_to_order,
+        user_profiles: product.user_profiles
+      }
+    };
+
+    // Check if product already exists in cart
+    const existingItemIndex = cartItems.findIndex((item: any) => item.product_id === product.id);
+    
+    if (existingItemIndex >= 0) {
+      // Update quantity of existing item
+      cartItems[existingItemIndex].quantity += quantity;
     } else {
-      cartItems.push({ productId: id, quantity });
+      // Add new item to cart
+      cartItems.push(cartItem);
     }
 
-    localStorage.setItem('cart', JSON.stringify(cartItems));
+    localStorage.setItem(cartKey, JSON.stringify(cartItems));
     
     toast({
       title: "Added to cart",
-      description: `${quantity} x ${product?.name} added to cart`,
+      description: `${quantity} x ${product.name} added to cart`,
     });
   };
 
