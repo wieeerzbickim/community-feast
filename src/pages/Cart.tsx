@@ -186,7 +186,16 @@ const Cart = () => {
 
       if (data?.url) {
         if (newTab) {
-          newTab.location.href = data.url;
+          try {
+            newTab.document.open();
+            newTab.document.write(`<!doctype html><html><head><meta charset="utf-8" /><title>Przekierowanie do Stripe...</title></head><body style="font-family: ui-sans-serif, system-ui; padding:24px; line-height:1.6"><h2>Przekierowujemy do Stripe...</h2><p>Jeśli nic się nie dzieje, kliknij poniższy przycisk:</p><p><a href="${data.url}" style="display:inline-block;padding:10px 16px;border:1px solid #ccc;border-radius:8px;text-decoration:none">Otwórz Stripe Checkout</a></p></body></html>`);
+            newTab.document.close();
+          } catch (e) { /* no-op */ }
+          try {
+            newTab.location.replace(data.url);
+          } catch {
+            newTab.location.href = data.url;
+          }
         } else {
           window.location.href = data.url;
         }
