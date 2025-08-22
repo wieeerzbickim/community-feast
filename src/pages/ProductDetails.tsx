@@ -261,20 +261,28 @@ const ProductDetails = () => {
           <div className="space-y-4">
             <div className="aspect-square rounded-lg overflow-hidden bg-muted">
               {productImages.length > 1 ? (
-                <Carousel className="w-full h-full">
+                <Carousel 
+                  className="w-full h-full" 
+                  opts={{
+                    align: "start",
+                    loop: true,
+                    dragFree: true,
+                  }}
+                >
                   <CarouselContent>
                     {productImages.map((image, index) => (
                       <CarouselItem key={image.id}>
                         <img
                           src={image.image_url}
                           alt={image.alt_text || `${product.name} - Image ${index + 1}`}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover cursor-grab active:cursor-grabbing"
+                          draggable={false}
                         />
                       </CarouselItem>
                     ))}
                   </CarouselContent>
-                  <CarouselPrevious className="left-4" />
-                  <CarouselNext className="right-4" />
+                  <CarouselPrevious className="left-4 opacity-70 hover:opacity-100 transition-opacity" />
+                  <CarouselNext className="right-4 opacity-70 hover:opacity-100 transition-opacity" />
                 </Carousel>
               ) : productImages.length === 1 ? (
                 <img
