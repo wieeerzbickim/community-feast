@@ -21,6 +21,13 @@ import {
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 interface Product {
   id: string;
@@ -47,6 +54,14 @@ interface Product {
   } | null;
 }
 
+interface ProductImage {
+  id: string;
+  image_url: string;
+  is_primary: boolean;
+  sort_order: number;
+  alt_text: string | null;
+}
+
 interface Review {
   id: string;
   rating: number;
@@ -66,6 +81,7 @@ const ProductDetails = () => {
   const { toast } = useToast();
   
   const [product, setProduct] = useState<Product | null>(null);
+  const [productImages, setProductImages] = useState<ProductImage[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
@@ -75,6 +91,7 @@ const ProductDetails = () => {
   useEffect(() => {
     if (id) {
       fetchProductDetails();
+      fetchProductImages();
       fetchReviews();
     }
   }, [id]);
@@ -102,6 +119,21 @@ const ProductDetails = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchProductImages = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('product_images')
+        .select('*')
+        .eq('product_id', id)
+        .order('sort_order');
+
+      if (error) throw error;
+      setProductImages(data || []);
+    } catch (error) {
+      console.error('Error fetching product images:', error);
     }
   };
 
@@ -225,10 +257,32 @@ const ProductDetails = () => {
         </Button>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Product Image */}
+          {/* Product Images */}
           <div className="space-y-4">
             <div className="aspect-square rounded-lg overflow-hidden bg-muted">
-              {product.image_url ? (
+              {productImages.length > 1 ? (
+                <Carousel className="w-full h-full">
+                  <CarouselContent>
+                    {productImages.map((image, index) => (
+                      <CarouselItem key={image.id}>
+                        <img
+                          src={image.image_url}
+                          alt={image.alt_text || `${product.name} - Image ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                  <CarouselPrevious className="left-4" />
+                  <CarouselNext className="right-4" />
+                </Carousel>
+              ) : productImages.length === 1 ? (
+                <img
+                  src={productImages[0].image_url}
+                  alt={productImages[0].alt_text || product.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : product.image_url ? (
                 <img
                   src={product.image_url}
                   alt={product.name}

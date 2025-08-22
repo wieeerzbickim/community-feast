@@ -56,10 +56,10 @@ const AddProduct = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [uploadingImage, setUploadingImage] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
   const [commissionRate, setCommissionRate] = useState<number>(12);
 
   const {
@@ -134,13 +134,26 @@ const AddProduct = () => {
   };
 
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
+    const files = Array.from(event.target.files || []);
+    
+    if (imageFiles.length + files.length > 5) {
+      toast({
+        title: t('common.error'),
+        description: 'Maksymalnie 5 zdjęć na produkt',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const validFiles: File[] = [];
+    const newPreviews: string[] = [];
+
+    files.forEach((file) => {
       // Validate file type
       if (!file.type.startsWith('image/')) {
         toast({
           title: t('common.error'),
-          description: 'Proszę wybrać plik graficzny',
+          description: 'Proszę wybrać pliki graficzne',
           variant: 'destructive',
         });
         return;
@@ -156,72 +169,74 @@ const AddProduct = () => {
         return;
       }
 
-      setImageFile(file);
+      validFiles.push(file);
       
       // Create preview
       const reader = new FileReader();
       reader.onload = (e) => {
-        setImagePreview(e.target?.result as string);
+        newPreviews.push(e.target?.result as string);
+        if (newPreviews.length === validFiles.length) {
+          setImageFiles(prev => [...prev, ...validFiles]);
+          setImagePreviews(prev => [...prev, ...newPreviews]);
+        }
       };
       reader.readAsDataURL(file);
-    }
+    });
   };
 
-  const uploadImage = async (file: File): Promise<string | null> => {
+  const removeImage = (index: number) => {
+    setImageFiles(prev => prev.filter((_, i) => i !== index));
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadImages = async (files: File[]): Promise<string[]> => {
+    if (files.length === 0) return [];
+    
     try {
-      setUploadingImage(true);
-      
-      // Generate unique filename
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user?.id}/${Date.now()}.${fileExt}`;
+      setUploadingImages(true);
+      const uploadPromises = files.map(async (file, index) => {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${user?.id}/${Date.now()}_${index}.${fileExt}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('product-images')
-        .upload(fileName, file);
+        const { error: uploadError } = await supabase.storage
+          .from('product-images')
+          .upload(fileName, file);
 
-      if (uploadError) throw uploadError;
+        if (uploadError) throw uploadError;
 
-      // Get public URL
-      const { data } = supabase.storage
-        .from('product-images')
-        .getPublicUrl(fileName);
+        const { data } = supabase.storage
+          .from('product-images')
+          .getPublicUrl(fileName);
 
-      return data.publicUrl;
+        return data.publicUrl;
+      });
+
+      return await Promise.all(uploadPromises);
     } catch (error: any) {
-      console.error('Error uploading image:', error);
+      console.error('Error uploading images:', error);
       toast({
         title: t('common.error'),
-        description: t('addProduct.imageError'),
+        description: 'Błąd podczas przesyłania zdjęć',
         variant: 'destructive',
       });
-      return null;
+      return [];
     } finally {
-      setUploadingImage(false);
+      setUploadingImages(false);
     }
   };
 
   const onSubmit = async (data: ProductFormData) => {
     if (!user) return;
 
-    setLoading(true);
+    setSaving(true);
     try {
-      let imageUrl = null;
+      setSaving(true);
       
-      // Upload image if selected
-      if (imageFile) {
-        imageUrl = await uploadImage(imageFile);
-        if (!imageUrl) {
-          setLoading(false);
-          return;
-        }
-      }
+      // Upload images if provided
+      const imageUrls = await uploadImages(imageFiles);
 
-      const tagsArray = data.tags 
-        ? data.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
-        : [];
-
+      // Prepare the product data
       const productData = {
-        producer_id: user.id,
         name: data.name,
         description: data.description || null,
         category_id: data.category_id,
@@ -229,38 +244,60 @@ const AddProduct = () => {
         unit: data.unit,
         stock_quantity: data.made_to_order ? 0 : parseInt(data.stock_quantity || '0'),
         made_to_order: data.made_to_order,
-        execution_time_hours: data.made_to_order && data.execution_time_hours ? parseInt(data.execution_time_hours) : null,
+        execution_time_hours: data.made_to_order ? parseInt(data.execution_time_hours || '0') : null,
         ingredients: data.ingredients || null,
         allergens: data.allergens || null,
         storage_instructions: data.storage_instructions || null,
         shelf_life_days: data.shelf_life_days ? parseInt(data.shelf_life_days) : null,
-        tags: tagsArray.length > 0 ? tagsArray : null,
         is_available: data.is_available,
         featured: data.featured,
-        image_url: imageUrl,
+        producer_id: user.id,
+        image_url: imageUrls.length > 0 ? imageUrls[0] : null,
+        tags: data.tags ? data.tags.split(',').map(tag => tag.trim()) : null,
       };
 
-      const { error } = await supabase
+      const { data: insertedProduct, error } = await supabase
         .from('products')
-        .insert([productData]);
+        .insert([productData])
+        .select()
+        .single();
 
       if (error) throw error;
+
+      // Insert additional product images
+      if (imageUrls.length > 0 && insertedProduct) {
+        const imageInserts = imageUrls.map((url, index) => ({
+          product_id: insertedProduct.id,
+          image_url: url,
+          is_primary: index === 0,
+          sort_order: index,
+          alt_text: `${data.name} - zdjęcie ${index + 1}`
+        }));
+
+        const { error: imageError } = await supabase
+          .from('product_images')
+          .insert(imageInserts);
+
+        if (imageError) {
+          console.error('Error inserting product images:', imageError);
+        }
+      }
 
       toast({
         title: t('common.success'),
         description: t('addProduct.success'),
       });
-
-      navigate('/producer-dashboard');
+      
+      navigate('/producer/dashboard');
     } catch (error: any) {
       console.error('Error creating product:', error);
       toast({
         title: t('common.error'),
-        description: error.message || t('addProduct.error'),
+        description: error.message,
         variant: 'destructive',
       });
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
@@ -340,54 +377,68 @@ const AddProduct = () => {
 
               {/* Image Upload */}
               <div className="space-y-2">
-                <Label>{t('addProduct.image')}</Label>
-                <div className="flex items-center gap-4">
-                  {imagePreview ? (
-                    <div className="relative">
-                      <img 
-                        src={imagePreview} 
-                        alt="Preview" 
-                        className="w-32 h-32 object-cover rounded-lg border"
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="absolute -top-2 -right-2 h-6 w-6"
-                        onClick={() => {
-                          setImageFile(null);
-                          setImagePreview(null);
-                        }}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="w-32 h-32 border-2 border-dashed border-muted-foreground/25 rounded-lg flex items-center justify-center">
-                      <Camera className="h-8 w-8 text-muted-foreground" />
+                <Label>{t('addProduct.image')} (maks. 5 zdjęć)</Label>
+                <div className="space-y-4">
+                  {imagePreviews.length > 0 && (
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {imagePreviews.map((preview, index) => (
+                        <div key={index} className="relative">
+                          <img 
+                            src={preview} 
+                            alt={`Preview ${index + 1}`} 
+                            className="w-32 h-32 object-cover rounded-lg border"
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute -top-2 -right-2 h-6 w-6"
+                            onClick={() => removeImage(index)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                          {index === 0 && (
+                            <div className="absolute -bottom-2 left-0 right-0 text-center">
+                              <span className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded">
+                                Główne
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   )}
                   
-                  <div className="flex flex-col gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => document.getElementById('image-upload')?.click()}
-                      disabled={uploadingImage}
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      {imagePreview ? t('addProduct.changeImage') : t('addProduct.uploadImage')}
-                    </Button>
-                    <input
-                      id="image-upload"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className="hidden"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Maksymalny rozmiar: 5MB
-                    </p>
+                  <div className="flex items-center gap-4">
+                    {imagePreviews.length === 0 && (
+                      <div className="w-32 h-32 border-2 border-dashed border-muted-foreground/25 rounded-lg flex items-center justify-center">
+                        <Camera className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                    )}
+                    
+                    <div className="flex flex-col gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => document.getElementById('image-upload')?.click()}
+                        disabled={uploadingImages || imagePreviews.length >= 5}
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        {imagePreviews.length === 0 ? 'Dodaj zdjęcia' : 'Dodaj więcej'}
+                      </Button>
+                      <input
+                        id="image-upload"
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleImageChange}
+                        className="hidden"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Maksymalny rozmiar: 5MB każde<br/>
+                        Maksymalnie 5 zdjęć
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -619,9 +670,9 @@ const AddProduct = () => {
             >
               {t('common.cancel')}
             </Button>
-            <Button type="submit" disabled={loading || uploadingImage}>
-              {loading ? t('common.loading') : 
-               uploadingImage ? t('addProduct.uploadingImage') : 
+            <Button type="submit" disabled={saving || uploadingImages}>
+              {saving ? t('common.loading') : 
+               uploadingImages ? t('addProduct.uploadingImage') : 
                t('addProduct.createProduct')}
             </Button>
           </div>

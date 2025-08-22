@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Save, Trash2 } from 'lucide-react';
+import ProductImageManager from '@/components/ProductImageManager';
 
 const EditProduct = () => {
   const { id } = useParams<{ id: string }>();
@@ -282,18 +283,22 @@ const EditProduct = () => {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
 
-                <div>
-                  <Label htmlFor="image_url">Image URL</Label>
-                  <Input
-                    id="image_url"
-                    type="url"
-                    value={productData.image_url}
-                    onChange={(e) => setProductData(prev => ({ ...prev, image_url: e.target.value }))}
-                    placeholder="https://..."
-                  />
-                </div>
+              <div className="col-span-full">
+                <ProductImageManager 
+                  productId={id!} 
+                  onImagesChange={(images) => {
+                    // Update the main image_url when images change
+                    const primaryImage = images.find(img => img.is_primary);
+                    if (primaryImage) {
+                      setProductData(prev => ({ ...prev, image_url: primaryImage.image_url }));
+                    }
+                  }}
+                />
+              </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <Label htmlFor="shelf_life_days">Shelf Life (days)</Label>
                   <Input
