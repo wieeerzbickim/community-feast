@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -15,6 +16,7 @@ interface ProductReviewFormProps {
 
 const ProductReviewForm: React.FC<ProductReviewFormProps> = ({ productId, producerId, onReviewSubmitted }) => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const { toast } = useToast();
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
@@ -26,8 +28,8 @@ const ProductReviewForm: React.FC<ProductReviewFormProps> = ({ productId, produc
     
     if (!user) {
       toast({
-        title: "Error",
-        description: "You must be logged in to submit a review",
+        title: t('common.error'),
+        description: t('common.mustBeLoggedIn'),
         variant: "destructive",
       });
       return;
@@ -35,8 +37,8 @@ const ProductReviewForm: React.FC<ProductReviewFormProps> = ({ productId, produc
 
     if (rating === 0) {
       toast({
-        title: "Error",
-        description: "Please select a rating",
+        title: t('common.error'),
+        description: t('common.selectRating'),
         variant: "destructive",
       });
       return;
@@ -58,8 +60,8 @@ const ProductReviewForm: React.FC<ProductReviewFormProps> = ({ productId, produc
       if (error) throw error;
 
       toast({
-        title: "Success",
-        description: "Your review has been submitted",
+        title: t('common.success'),
+        description: t('common.reviewSubmitted'),
       });
 
       setRating(0);
@@ -68,8 +70,8 @@ const ProductReviewForm: React.FC<ProductReviewFormProps> = ({ productId, produc
     } catch (error) {
       console.error('Error submitting review:', error);
       toast({
-        title: "Error",
-        description: "Failed to submit review",
+        title: t('common.error'),
+        description: t('common.failedToSubmit'),
         variant: "destructive",
       });
     } finally {
@@ -81,10 +83,10 @@ const ProductReviewForm: React.FC<ProductReviewFormProps> = ({ productId, produc
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Leave a Review</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">Please log in to leave a review.</p>
+        <CardTitle>{t('reviews.leaveReview')}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-muted-foreground">{t('reviews.pleaseLogInToReview')}</p>
         </CardContent>
       </Card>
     );
@@ -93,12 +95,12 @@ const ProductReviewForm: React.FC<ProductReviewFormProps> = ({ productId, produc
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Leave a Review</CardTitle>
+        <CardTitle>{t('reviews.leaveReview')}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-sm font-medium mb-2 block">Rating</label>
+            <label className="text-sm font-medium mb-2 block">{t('reviews.rating')}</label>
             <div className="flex items-center gap-1">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
@@ -122,17 +124,17 @@ const ProductReviewForm: React.FC<ProductReviewFormProps> = ({ productId, produc
           </div>
 
           <div>
-            <label className="text-sm font-medium mb-2 block">Comment (optional)</label>
+            <label className="text-sm font-medium mb-2 block">{t('reviews.comment')} ({t('common.optional')})</label>
             <Textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder="Share your experience with this product..."
+              placeholder={t('common.shareExperienceWithProduct')}
               rows={3}
             />
           </div>
 
           <Button type="submit" disabled={submitting || rating === 0}>
-            {submitting ? 'Submitting...' : 'Submit Review'}
+            {submitting ? t('common.submitting') : t('common.submit')}
           </Button>
         </form>
       </CardContent>

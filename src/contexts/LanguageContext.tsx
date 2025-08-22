@@ -39,6 +39,39 @@ const translations = {
     'common.open': 'Otwórz',
     'common.yes': 'Tak',
     'common.no': 'Nie',
+    'common.optional': 'opcjonalne',
+    'common.selectRating': 'Wybierz ocenę',
+    'common.mustBeLoggedIn': 'Musisz być zalogowany',
+    'common.pleaseLogIn': 'Zaloguj się aby kontynuować',
+    'common.submitting': 'Wysyłanie...',
+    'common.failedToSubmit': 'Nie udało się wysłać',
+    'common.thankYouForFeedback': 'Dziękujemy za opinię!',
+    'common.reviewSubmitted': 'Opinia została wysłana',
+    'common.producerReviewSubmitted': 'Opinia o producencie została wysłana',
+    'common.shareExperience': 'Podziel się swoim doświadczeniem',
+    'common.shareExperienceWithProduct': 'Podziel się swoim doświadczeniem z tym produktem...',
+    'common.shareExperienceWithProducer': 'Podziel się swoim doświadczeniem z tym producentem...',
+    'common.pageNotFound': 'Strona nie została znaleziona',
+    'common.returnToHome': 'Powrót do strony głównej',
+    'common.oops': 'Ups!',
+    
+    // Pricing
+    'pricing.breakdown': 'Podział zarobków',
+    'pricing.customerPrice': 'Cena dla klienta:',
+    'pricing.platformCommission': 'Prowizja platformy',
+    'pricing.yourEarnings': 'Twoje zarobki:',
+    
+    // Reviews
+    'reviews.leaveReview': 'Zostaw opinię',
+    'reviews.rateProducer': 'Oceń tego producenta',
+    'reviews.rating': 'Ocena',
+    'reviews.comment': 'Komentarz',
+    'reviews.pleaseLogInToReview': 'Zaloguj się aby zostawić opinię.',
+    'reviews.pleaseLogInToRate': 'Zaloguj się aby ocenić producenta.',
+    
+    // Welcome
+    'welcome.title': 'Witaj w LocalHarvest Hub',
+    'welcome.subtitle': 'Zacznij budować swój niesamowity projekt tutaj!',
     
     // Auth
     'auth.signIn': 'Zaloguj się',
@@ -233,6 +266,39 @@ const translations = {
     'common.open': 'Open',
     'common.yes': 'Yes',
     'common.no': 'No',
+    'common.optional': 'optional',
+    'common.selectRating': 'Select a rating',
+    'common.mustBeLoggedIn': 'You must be logged in',
+    'common.pleaseLogIn': 'Please log in to continue',
+    'common.submitting': 'Submitting...',
+    'common.failedToSubmit': 'Failed to submit',
+    'common.thankYouForFeedback': 'Thank you for your feedback!',
+    'common.reviewSubmitted': 'Review submitted',
+    'common.producerReviewSubmitted': 'Your producer review has been submitted',
+    'common.shareExperience': 'Share your experience',
+    'common.shareExperienceWithProduct': 'Share your experience with this product...',
+    'common.shareExperienceWithProducer': 'Share your experience with this producer...',
+    'common.pageNotFound': 'Page not found',
+    'common.returnToHome': 'Return to Home',
+    'common.oops': 'Oops!',
+    
+    // Pricing
+    'pricing.breakdown': 'Earnings Breakdown',
+    'pricing.customerPrice': 'Customer Price:',
+    'pricing.platformCommission': 'Platform Commission',
+    'pricing.yourEarnings': 'Your Earnings:',
+    
+    // Reviews
+    'reviews.leaveReview': 'Leave a Review',
+    'reviews.rateProducer': 'Rate this Producer',
+    'reviews.rating': 'Rating',
+    'reviews.comment': 'Comment',
+    'reviews.pleaseLogInToReview': 'Please log in to leave a review.',
+    'reviews.pleaseLogInToRate': 'Please log in to rate the producer.',
+    
+    // Welcome
+    'welcome.title': 'Welcome to LocalHarvest Hub',
+    'welcome.subtitle': 'Start building your amazing project here!',
     
     // Auth
     'auth.signIn': 'Sign In',

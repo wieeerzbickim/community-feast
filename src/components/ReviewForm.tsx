@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -21,6 +22,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
   onReviewSubmitted
 }) => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const { toast } = useToast();
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
@@ -29,8 +31,8 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
   const submitReview = async () => {
     if (!user || rating === 0) {
       toast({
-        title: "Error",
-        description: "Please select a rating",
+        title: t('common.error'),
+        description: t('common.selectRating'),
         variant: "destructive",
       });
       return;
@@ -69,14 +71,14 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
       }
 
       toast({
-        title: "Review submitted",
-        description: "Thank you for your feedback!",
+        title: t('common.reviewSubmitted'),
+        description: t('common.thankYouForFeedback'),
       });
 
       onReviewSubmitted();
     } catch (error: any) {
       toast({
-        title: "Error",
+        title: t('common.error'),
         description: error.message,
         variant: "destructive",
       });
@@ -88,11 +90,11 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Leave a Review</CardTitle>
+        <CardTitle>{t('reviews.leaveReview')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
-          <label className="text-sm font-medium mb-2 block">Rating</label>
+          <label className="text-sm font-medium mb-2 block">{t('reviews.rating')}</label>
           <div className="flex items-center gap-1">
             {[1, 2, 3, 4, 5].map((star) => (
               <button
@@ -114,11 +116,11 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
         </div>
 
         <div>
-          <label className="text-sm font-medium mb-2 block">Comment (optional)</label>
+          <label className="text-sm font-medium mb-2 block">{t('reviews.comment')} ({t('common.optional')})</label>
           <Textarea
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            placeholder="Share your experience with this product..."
+            placeholder={t('common.shareExperienceWithProduct')}
             rows={3}
           />
         </div>
@@ -128,7 +130,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
           disabled={rating === 0 || submitting}
           className="w-full"
         >
-          {submitting ? 'Submitting...' : 'Submit Review'}
+          {submitting ? t('common.submitting') : t('common.submit')}
         </Button>
       </CardContent>
     </Card>

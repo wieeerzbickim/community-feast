@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Info } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface PricingBreakdownProps {
   customerPrice: number;
@@ -8,6 +9,7 @@ interface PricingBreakdownProps {
 }
 
 const PricingBreakdown: React.FC<PricingBreakdownProps> = ({ customerPrice, commissionRate }) => {
+  const { t } = useLanguage();
   const commissionAmount = customerPrice * (commissionRate / 100);
   const producerEarnings = customerPrice - commissionAmount;
 
@@ -16,21 +18,21 @@ const PricingBreakdown: React.FC<PricingBreakdownProps> = ({ customerPrice, comm
       <CardHeader>
         <CardTitle className="text-sm font-medium flex items-center gap-2">
           <Info className="h-4 w-4" />
-          Podział zarobków
+          {t('pricing.breakdown')}
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span>Cena dla klienta:</span>
+            <span>{t('pricing.customerPrice')}</span>
             <span className="font-medium">{customerPrice.toFixed(2)} PLN</span>
           </div>
           <div className="flex justify-between text-muted-foreground">
-            <span>Prowizja platformy ({commissionRate}%):</span>
+            <span>{t('pricing.platformCommission')} ({commissionRate}%):</span>
             <span>-{commissionAmount.toFixed(2)} PLN</span>
           </div>
           <div className="flex justify-between font-medium text-primary border-t pt-2">
-            <span>Twoje zarobki:</span>
+            <span>{t('pricing.yourEarnings')}</span>
             <span>{producerEarnings.toFixed(2)} PLN</span>
           </div>
         </div>
